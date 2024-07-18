@@ -10,7 +10,6 @@ import {
 	SignupResponse,
 	type TokenData,
 } from "@edgedb/auth-core"
-import { CustomResponse, json, redirect } from "@solidjs/router"
 import { type APIEvent } from "@solidjs/start/server"
 import type { Client } from "edgedb"
 import { deleteCookie, getCookie, HTTPEvent, setCookie } from "vinxi/http"
@@ -21,8 +20,8 @@ import {
 } from "../shared"
 
 export * from "@edgedb/auth-core/errors"
-export type { TokenData, SolidAuthOptions, BuiltinProviderNames }
 export { SolidAuthHelpers }
+export type { BuiltinProviderNames, SolidAuthOptions, TokenData }
 
 type ParamsOrError<
 	Result extends object,
@@ -62,7 +61,7 @@ export interface CreateAuthRouteHandlers {
 			provider: BuiltinOAuthProviderNames
 			isSignUp: boolean
 		}>
-	): Promise<CustomResponse<unknown>>
+	): Promise<never>
 	onEmailPasswordSignIn(
 		params: ParamsOrError<{ tokenData: TokenData }>
 	): Promise<Response>
@@ -77,19 +76,19 @@ export interface CreateAuthRouteHandlers {
 			{ tokenData: TokenData },
 			{ verificationToken?: string }
 		>
-	): Promise<CustomResponse<never> | never>
+	): Promise<never>
 	onWebAuthnSignUp(
 		params: ParamsOrError<{ tokenData: TokenData | null }>
 	): Promise<Response>
 	onWebAuthnSignIn(
 		params: ParamsOrError<{ tokenData: TokenData }>
-	): Promise<CustomResponse<never> | never>
+	): Promise<never>
 	onMagicLinkCallback(
 		params: ParamsOrError<{ tokenData: TokenData; isSignUp: boolean }>
-	): Promise<CustomResponse<never> | never>
+	): Promise<never>
 	onMagicLinkSignIn(
 		params: ParamsOrError<{ tokenData: TokenData }>
-	): Promise<CustomResponse<never> | never>
+	): Promise<never>
 	onBuiltinUICallback(
 		params: ParamsOrError<
 			(
@@ -103,8 +102,8 @@ export interface CreateAuthRouteHandlers {
 				  }
 			) & { isSignUp: boolean }
 		>
-	): Promise<CustomResponse<never> | never>
-	onSignout(evt: APIEvent): Promise<CustomResponse<never>>
+	): Promise<never>
+	onSignout(evt: APIEvent): Promise<never>
 }
 
 export class SolidServerAuth extends SolidAuthHelpers {
@@ -183,7 +182,7 @@ export class SolidServerAuth extends SolidAuthHelpers {
 							core.createPKCESession()
 						)
 						this.setVerifierCookie(pkceSession.verifier)
-						return redirect(
+						return _redirect(
 							pkceSession.getOAuthUrl(
 								provider,
 								redirectUrl,
@@ -280,7 +279,7 @@ export class SolidServerAuth extends SolidAuthHelpers {
 								"'email' is missing in request search parameters"
 							)
 						}
-						return redirect(
+						return _redirect(
 							(await this.core).getWebAuthnSignupOptionsUrl(email)
 						)
 					}
@@ -291,7 +290,7 @@ export class SolidServerAuth extends SolidAuthHelpers {
 								"'email' is missing in request search parameters"
 							)
 						}
-						return redirect(
+						return _redirect(
 							(await this.core).getWebAuthnSigninOptionsUrl(email)
 						)
 					}
@@ -436,7 +435,8 @@ export class SolidServerAuth extends SolidAuthHelpers {
 							core.createPKCESession()
 						)
 						this.setVerifierCookie(pkceSession.verifier)
-						return redirect(
+
+						return _redirect(
 							evt.params.auth === "builtin/signup"
 								? pkceSession.getHostedUISignupUrl()
 								: pkceSession.getHostedUISigninUrl()
@@ -487,7 +487,7 @@ export class SolidServerAuth extends SolidAuthHelpers {
 							const error = err instanceof Error ? err : new Error(String(err))
 							return onEmailPasswordSignIn
 								? onEmailPasswordSignIn({ error })
-								: json(_wrapError(error))
+								: Response.json(_wrapError(error))
 						}
 						this.setAuthCookie(tokenData.auth_token)
 						return onEmailPasswordSignIn?.({ error: null, tokenData })
@@ -520,7 +520,7 @@ export class SolidServerAuth extends SolidAuthHelpers {
 							const error = err instanceof Error ? err : new Error(String(err))
 							return onEmailPasswordSignUp
 								? onEmailPasswordSignUp({ error })
-								: json(_wrapError(error))
+								: Response.json(_wrapError(error))
 						}
 						this.setVerifierCookie(result.verifier)
 						if (result.status === "complete") {
@@ -586,7 +586,7 @@ export class SolidServerAuth extends SolidAuthHelpers {
 							const error = err instanceof Error ? err : new Error(String(err))
 							return onEmailPasswordReset
 								? onEmailPasswordReset({ error })
-								: json(_wrapError(error))
+								: Response.json(_wrapError(error))
 						}
 						this.setAuthCookie(tokenData.auth_token)
 						this.deletePkceVerifierCookie()
@@ -991,4 +991,14 @@ function _extractParams(
 		}
 	}
 	return params
+}
+
+function _redirect(url: string, statusCode = 302) {
+	const headers = new Headers()
+	headers.set("Location", url)
+	const response = new Response(null, {
+		status: statusCode,
+		headers: headers,
+	})
+	return response
 }
