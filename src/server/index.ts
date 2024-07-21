@@ -64,34 +64,34 @@ export interface CreateAuthRouteHandlers {
       provider: BuiltinOAuthProviderNames;
       isSignUp: boolean;
     }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onEmailPasswordSignIn(
     params: ParamsOrError<{ tokenData: TokenData }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onEmailPasswordSignUp(
     params: ParamsOrError<{ tokenData: TokenData | null }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onEmailPasswordReset(
     params: ParamsOrError<{ tokenData: TokenData }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onEmailVerify(
     params: ParamsOrError<
       { tokenData: TokenData },
       { verificationToken?: string }
     >,
-  ): Promise<never>;
+  ): Promise<Response>;
   onWebAuthnSignUp(
     params: ParamsOrError<{ tokenData: TokenData | null }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onWebAuthnSignIn(
     params: ParamsOrError<{ tokenData: TokenData }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onMagicLinkCallback(
     params: ParamsOrError<{ tokenData: TokenData; isSignUp: boolean }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onMagicLinkSignIn(
     params: ParamsOrError<{ tokenData: TokenData }>,
-  ): Promise<never>;
+  ): Promise<Response>;
   onBuiltinUICallback(
     params: ParamsOrError<
       (
@@ -105,8 +105,8 @@ export interface CreateAuthRouteHandlers {
           }
       ) & { isSignUp: boolean }
     >,
-  ): Promise<never>;
-  onSignout(evt: APIEvent): Promise<never>;
+  ): Promise<Response>;
+  onSignout(evt: APIEvent): Promise<Response>;
 }
 
 export class SolidServerAuth extends SolidAuthHelpers {
